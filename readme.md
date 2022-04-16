@@ -17,7 +17,7 @@ For each state of each callstack, we maintain three different listings of object
 
 1. *Owned objects*: Objects that can be deallocated immediately upon termination of the state.
 2. *Borrowed objects*: Objects that cannot be deallocated immediately upon termination of the state.
-2. *Collected objects*: Objects that might not be able to be immediately deallocated upon termination of the state.
+3. *Collected objects*: Objects that might not be able to be immediately deallocated upon termination of the state.
 
 If an object belongs to a listing of owned objects, it may not belong in any listing of collected objects, only belong to a single listing of owned objects, and can belong in any number of listings of borrowed objects.
 
@@ -30,3 +30,40 @@ Whenever a state terminates, it immediately deallocates all of its owned objects
 Deallocation of singulars is obvious. Deallocation of a collection requires scanning it and deallocating each found object before deallocating the collection itself in the obvious way. Deallocation may be recursive.
 
 Any operation that adds an object to a collection must increment the object's counter if it has one. This counter must be incremented for each time the object is added to the collection. Any operation that removes objects from collections must do the inverse.
+
+If you add an owned object to a collected collection, then the object must become collected. If you add a collected object to an owned collection, then the collection must become collected.
+
+## Examples
+
+All of the following example programs are written in Go.
+
+```
+package main
+import "fmt"
+
+func main() {
+	foo := 42
+	fmt.Println(foo)
+}
+```
+
+In this program, `foo` is owned by `main()`, hence, when `main()` terminates, `foo` will be deallocated.
+
+```
+package main
+import "fmt"
+
+func getFoo() *int {
+	foo := 42
+	return &foo
+}
+
+func main() {
+	foo := getFoo()
+	fmt.Println(*foo)
+}
+```
+
+Object | Owner | Counter
+--- | --- | ---
+`foo` || 2
